@@ -14,6 +14,7 @@ var level=0;
 var drawable=[];
 var dt;
 var currentt=Date.now();
+var slowMoFactor=1;
 
 //TODO DEBUG
 level=1;
@@ -54,19 +55,16 @@ function setup()
     //yin-yang
     else if(level==1)
     {
-        var size=30;
+        slowMoFactor=-0.5;
+        var force=500;
+        var size=Math.min(canvasH,canvasW)*0.02;
         var yin=new Object();
-        yin.type="circle";
-        yin.color="#FFF";
         yin.x=canvasW/2;
         yin.y=canvasH/2-Math.min(canvasH,canvasW)*0.2;
-        yin.radius=size;
         var yang=new Object();
-        yang.type="circle";
-        yang.color="#000";
         yang.x=canvasW/2;
         yang.y=canvasH/2+Math.min(canvasH,canvasW)*0.2;
-        yang.radius=size;
+
         for(var x=0;x<canvasW;x+=size)
             for(var y=0;y<canvasH;y+=size)
                 if(distanceFrom(x,y,canvasW/2,canvasH/2)<Math.min(canvasH,canvasW)*0.4)
@@ -84,9 +82,50 @@ function setup()
                     tmp.size=size;
                     drawable.push(tmp);
                 }
-        
-        drawable.push(yin);
-        drawable.push(yang);
+        for(i=0;i<5;i++)
+        {
+            if(i!=0)
+            {
+                offsetX=size*(i%2)-size/2;
+                offsetY=size*Math.floor(i%4/2)-size/2;
+            }
+            else
+            {
+                offsetX=0;
+                offsetY=0;
+            }
+            var tmp=new Object();
+            tmp.x=yin.x+offsetX;
+            tmp.y=yin.y+offsetY;
+            tmp.type="circle";
+            tmp.color="#FFF";
+            tmp.radius=size/2;
+            tmp.force=force;
+            tmp.direction=Math.random()*Math.PI*2;
+            tmp.dx=tmp.force*Math.sin(tmp.direction);
+            tmp.dy=tmp.force*Math.cos(tmp.direction);
+            drawable.push(tmp);
+            var tmp=new Object();
+            tmp.x=yang.x+offsetX;
+            tmp.y=yang.y+offsetY;
+            tmp.type="circle";
+            tmp.color="#000";
+            tmp.radius=size/2;
+            tmp.force=force;
+            tmp.direction=Math.random()*Math.PI*2;
+            tmp.dx=tmp.force*Math.sin(tmp.direction);
+            tmp.dy=tmp.force*Math.cos(tmp.direction);
+            drawable.push(tmp);
+        }
+        var tmp=new Object();
+        tmp.type="timer";
+        tmp.x=canvasW/2-50;
+        tmp.y=canvasH/10*9;
+        tmp.seconds=0;
+        tmp.limit=13;
+        tmp.fontSize=50;
+        tmp.expired=function(e) { };
+        drawable.push(tmp);
     }
 }
 function startTimer()
@@ -118,7 +157,7 @@ function draw(obj)
     else if(obj.type=="square")
     {
         ctx.fillStyle=obj.color;
-        ctx.fillRect(obj.x,obj.y,obj.size,obj.size);
+        ctx.fillRect(obj.x-obj.size/2,obj.y-obj.size/2,obj.size,obj.size);
     }
     else if(obj.type=="rectangle")
     {
@@ -150,7 +189,8 @@ function move(obj)
         {
             obj.expired();
         }
-    }        
+    }
+
     if(obj.dx==null || obj.dy==null) return;
     obj.x+=obj.dx*dt;
     obj.y+=obj.dy*dt;
@@ -159,7 +199,7 @@ function move(obj)
 function run()
 {
     //how much is passed since last time?
-    dt=(Date.now()-currentt)/1000;
+    dt=(Date.now()-currentt)/1000 * slowMoFactor;
     currentt=Date.now();
 
     //draw stuff
@@ -186,6 +226,41 @@ function run()
             }
         } 
     });
+    if(level==1)
+    {
+        //slowly disable slowmotion
+        if(slowMoFactor<1)
+            slowMoFactor+=0.01;
+        //bounce
+        drawable.filter(el => el.type === "circle").forEach(el => {
+            //borders
+            if(distanceFrom(el.x,el.y,canvasW/2,canvasH/2)>Math.min(canvasH,canvasW)*0.4-el.radius)
+            {
+                el.direction = Math.atan2((canvasH / 2) - el.y, (canvasW / 2) - el.x);
+                el.direction+=rand(-1,1)/2;
+                el.dx=el.force*Math.cos(el.direction);
+                el.dy=el.force*Math.sin(el.direction);
+            }
+            //hit squares
+            drawable.filter(el => el.type === "square").forEach(block => {
+                if(el.color==block.color && distanceFrom(el.x,el.y,block.x,block.y)<el.radius+block.size/2)
+                {
+                    //TODO calcola meglio la direction
+                    el.direction=Math.atan2(block.y - el.y, block.x - el.x);
+                    if(Math.abs(el.x-block.x)<Math.abs(el.y-block.y))
+                        el.direction+=Math.PI;
+                    else if(Math.abs(el.x-block.x)>Math.abs(el.y-block.y))
+                        el.direction-=Math.PI;
+                    el.dx=el.force*Math.cos(el.direction);
+                    el.dy=el.force*Math.sin(el.direction);
+                    if(block.color=="#000")
+                        block.color="#FFF";
+                    else if(block.color=="#FFF")
+                        block.color="#000";
+                }
+            });
+        });
+    }
 
     //border
     ctx.fillStyle=fg;
