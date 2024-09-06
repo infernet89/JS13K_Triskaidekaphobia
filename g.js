@@ -15,6 +15,7 @@ var drawable=[];
 var dt;
 var currentt=Date.now();
 var slowMoFactor=1;
+var fontSize=50;
 
 //TODO DEBUG
 level=1;
@@ -55,7 +56,7 @@ function setup()
     //yin-yang
     else if(level==1)
     {
-        slowMoFactor=-0.5;
+        slowMoFactor=-0.1;
         var force=500;
         var size=Math.min(canvasH,canvasW)*0.02;
         var yin=new Object();
@@ -120,10 +121,10 @@ function setup()
         var tmp=new Object();
         tmp.type="timer";
         tmp.x=canvasW/2-50;
-        tmp.y=canvasH/10*9;
+        tmp.y=canvasH/20*19;
         tmp.seconds=0;
         tmp.limit=13;
-        tmp.fontSize=50;
+        tmp.fontSize=fontSize;
         tmp.expired=function(e) { };
         drawable.push(tmp);
     }
@@ -140,7 +141,34 @@ function startTimer()
     tmp.expired=function(e) { level++; setup(); };
     drawable.push(tmp);
 }
+function disegnaGraficoTorta(ctx, raggio, x, y, valori, colori) {
+  const totale = valori.reduce((a, b) => a + b, 0);
+  let angoloInizio = 0;
 
+  valori.forEach((valore, i) => {
+    const angolo = (valore / totale) * 2 * Math.PI;
+    ctx.fillStyle = colori[i];
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.arc(x, y, raggio, angoloInizio, angoloInizio + angolo);
+    ctx.closePath();
+    ctx.fill();
+
+    // Calcola la percentuale e la dimensione del testo
+    const percentuale = ((valore / totale) * 100).toFixed(1) + '%';
+    const dimensioneTesto = Math.max(10, (angolo / (2 * Math.PI)) * raggio / 2); 
+    ctx.font = `${dimensioneTesto}px Georgia, serif`;
+    ctx.fillStyle = "#000";
+    
+    // Posiziona il testo al centro della fetta
+    const angoloTesto = angoloInizio + angolo / 2;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(percentuale, x + Math.cos(angoloTesto) * raggio / 2, y + Math.sin(angoloTesto) * raggio / 2);
+    
+    angoloInizio += angolo;
+  });
+}
 //draw a single object
 function draw(obj)
 {
@@ -245,7 +273,6 @@ function run()
             drawable.filter(el => el.type === "square").forEach(block => {
                 if(el.color==block.color && distanceFrom(el.x,el.y,block.x,block.y)<el.radius+block.size/2)
                 {
-                    //TODO calcola meglio la direction
                     el.direction=Math.atan2(block.y - el.y, block.x - el.x);
                     if(Math.abs(el.x-block.x)<Math.abs(el.y-block.y))
                         el.direction+=Math.PI;
@@ -260,6 +287,12 @@ function run()
                 }
             });
         });
+        //count black and whites
+        nBlack=0;
+        nWhite=0;
+        drawable.filter(el => el.type === "square").forEach(block => { if(block.color=="#FFF") nWhite++; else if(block.color=="#000") nBlack++; });
+        disegnaGraficoTorta(ctx, Math.min(canvasH,canvasW)/10, canvasW/10*2, canvasH/20*17, [nBlack,nWhite], ["#EEE","#333"]);
+
     }
 
     //border
