@@ -16,6 +16,8 @@ var dt;
 var currentt=Date.now();
 var slowMoFactor=1;
 var fontSize=50;
+var paused=false;
+var betbutton=new Object();
 
 //TODO DEBUG
 level=1;
@@ -26,6 +28,13 @@ canvas = document.getElementById("g");
 ctx = canvas.getContext("2d");
 canvasW=canvas.width  = window.innerWidth;
 canvasH=canvas.height = window.innerHeight;
+ctx.textBaseline = "middle";
+betbutton.type="betbutton";
+betbutton.clickable=true;
+betbutton.x=canvasW/2-100;
+betbutton.y=canvasH/20*18;
+betbutton.width=200;
+betbutton.height=100;
 
 //controls
 canvas.addEventListener("mousemove",mossoMouse);
@@ -40,23 +49,18 @@ function setup()
 {
     drawable=[];
     if(level==0)
-    { 
-        var tmp=new Object();
-        tmp.type="rectangle";
-        tmp.x=canvasW/2-100;
-        tmp.y=canvasH/4*3;
-        tmp.width=200;
-        tmp.height=100;
-        tmp.clickable=true;
-        tmp.caption="Bet";
-        tmp.fontSize=100;
-        tmp.click=function(e) { startTimer(); this.clickable=false; this.opacity=0.2;};
-        drawable.push(tmp);          
+    {
+        betbutton.clickable=true;
+        betbutton.members=null;
+        betbutton.opacity=1;
+        betbutton.click=function(e) { startTimer(); this.clickable=false; this.opacity=0.2;};
+        drawable.push(betbutton);   
+        paused=false;       
     }
     //yin-yang
     else if(level==1)
     {
-        slowMoFactor=-0.1;
+        paused=true;
         var force=500;
         var size=Math.min(canvasH,canvasW)*0.02;
         var yin=new Object();
@@ -118,15 +122,44 @@ function setup()
             tmp.dy=tmp.force*Math.cos(tmp.direction);
             drawable.push(tmp);
         }
+        betbutton.clickable=true; 
+        betbutton.opacity=1;
+        betbutton.members=[];
         var tmp=new Object();
-        tmp.type="timer";
-        tmp.x=canvasW/2-50;
-        tmp.y=canvasH/20*19;
-        tmp.seconds=0;
-        tmp.limit=13;
-        tmp.fontSize=fontSize;
-        tmp.expired=function(e) { };
+        tmp.color="#EEE";
+        tmp.caption="White";
+        tmp.count=0;
+        tmp.selected=false;
+        tmp.chosen=false;
+        tmp.clickable=true;
         drawable.push(tmp);
+        betbutton.members['white']=tmp;
+        var tmp2=new Object();
+        tmp2.color="#333";
+        tmp2.caption="Black";
+        tmp2.count=0;
+        tmp2.selected=false;
+        tmp2.chosen=false;
+        tmp2.clickable=true;
+        drawable.push(tmp2);     
+        betbutton.members['black']=tmp2;
+
+        tmp.click=function(e) { tmp.chosen=true; tmp2.chosen=false; betbutton.clickable=true; betbutton.opacity=1; };
+        tmp2.click=function(e) { tmp2.chosen=true; tmp.chosen=false; betbutton.clickable=true; betbutton.opacity=1; };
+        betbutton.click=function(e) { paused=false; slowMoFactor=-0.3; this.clickable=false; this.opacity=0.2; tmp.clickable=false; tmp2.clickable=false; };
+        betbutton.clickable=false; 
+        betbutton.opacity=0.2;
+        drawable.push(betbutton); 
+
+        var timer=new Object();
+        timer.type="timer";
+        timer.x=canvasW/2-50;
+        timer.y=canvasH/20*18+50;
+        timer.seconds=0;
+        timer.limit=13;
+        timer.fontSize=fontSize;
+        timer.expired=function(e) { paused=true; checkWinner(); };
+        drawable.push(timer);
     }
 }
 function startTimer()
@@ -134,14 +167,14 @@ function startTimer()
     var tmp=new Object();
     tmp.type="timer";
     tmp.x=canvasW/2-50;
-    tmp.y=canvasH/10*9;
+    tmp.y=canvasH/20*18+50;
     tmp.seconds=0;
     tmp.limit=13;
     tmp.fontSize=50;
     tmp.expired=function(e) { level++; setup(); };
     drawable.push(tmp);
 }
-function disegnaGraficoTorta(ctx, raggio, x, y, valori, colori) {
+function drawPieChart(ctx, raggio, x, y, valori, colori) {
   const totale = valori.reduce((a, b) => a + b, 0);
   let angoloInizio = 0;
 
@@ -189,27 +222,91 @@ function draw(obj)
     }
     else if(obj.type=="rectangle")
     {
+        if(obj.caption)
+        {
+            ctx.fillStyle="#000";
+            ctx.globalAlpha=0.5;
+            ctx.fillRect(obj.x-5,obj.y-5,obj.width+10,obj.height+10);
+            ctx.globalAlpha=1;
+        }
         ctx.fillStyle=fg;
         ctx.fillRect(obj.x,obj.y,obj.width,obj.height);
         if(obj.caption)
         {
-            ctx.fillStyle=bg;
+            ctx.fillStyle=obj.color;
             ctx.font = obj.fontSize+"px Georgia, serif";
             ctx.textAlign="center";
-            ctx.fillText(obj.caption,obj.x+obj.width/2,obj.y+obj.height-obj.fontSize/6);
+            ctx.fillText(obj.caption,obj.x+obj.width/2,obj.y+obj.height-obj.fontSize/2);
         }
     }
     else if(obj.type=="timer")
     {
+        if(!obj.seconds) return;
         ctx.fillStyle=fg;
+        if(obj.limit && obj.limit-obj.seconds<1)
+            ctx.fillStyle="#F00";
         ctx.font = obj.fontSize+"px Georgia, serif";
         ctx.textAlign="left";
         ctx.fillText(Math.round(obj.seconds*100)/100,obj.x,obj.y);
+    }
+    else if(obj.type=="betbutton")
+    {
+        ctx.fillStyle=fg;
+        ctx.fillRect(canvasW/2-100,canvasH/20*18,200,100);
+        ctx.fillStyle=bg;
+        ctx.font = fontSize*2+"px Georgia, serif";
+        ctx.textAlign="center";
+        ctx.fillText("Bet",canvasW/2,canvasH/20*18+100-fontSize);
+        if(obj.members)
+        {
+            ctx.fillStyle=fg;
+            ctx.font = fontSize/2+"px Georgia, serif";
+            ctx.fillText("on",canvasW/2+125,canvasH/20*18+100-fontSize);
+            ctx.globalAlpha=1;
+            ctx.textAlign="left";
+            var nMembers=Reflect.ownKeys(obj.members).length-1;
+            var memberCount=1;
+            Reflect.ownKeys(obj.members).forEach(el => {
+                if(el=="length") return;
+                ctx.fillStyle=obj.members[el].color;
+                ctx.font = fontSize/2+"px Georgia, serif";
+                ctx.fillText(obj.members[el].caption+": "+obj.members[el].count,canvasW/2+150,canvasH/20*18 + (memberCount*100/nMembers)-50/nMembers );
+                if(obj.members[el].selected)
+                    ctx.fillText("____",canvasW/2+150,canvasH/20*18 + (memberCount*100/nMembers)-50/nMembers );
+                if(obj.members[el].chosen)
+                    ctx.fillText("➼",canvasW/2+130,canvasH/20*18 + (memberCount*100/nMembers)-50/nMembers );
+                obj.members[el].x=canvasW/2+150;
+                obj.members[el].y=canvasH/20*18 + (memberCount*100/nMembers)-50/nMembers-10;
+                obj.members[el].width=70;
+                obj.members[el].height=20;
+                memberCount++;
+            });
+        }
+    }
+    else if(obj.type=="text")
+    {
+        ctx.textAlign = "center";
+        let fontSize = 9999;
+        ctx.font = fontSize + "px Georgia, serif";
+        let textWidth = ctx.measureText(obj.caption).width;
+        while (textWidth > canvasW) {
+            fontSize--;  // Diminuisci la dimensione del font
+            ctx.font = fontSize + "px Georgia, serif";
+            textWidth = ctx.measureText(obj.caption).width;
+        }
+        ctx.fillStyle = "#000";
+        ctx.globalAlpha=0.8;
+        ctx.fillRect(0,canvasH/2-fontSize/2,canvasW,fontSize);
+
+        ctx.globalAlpha=1;
+        ctx.fillStyle = obj.color;
+        ctx.fillText(obj.caption, canvasW / 2, canvasH / 2);
     }
     ctx.restore();
 }
 function move(obj)
 {
+    if(paused) return;
     if(obj.type=="timer")
     {
         obj.seconds+=dt;
@@ -222,6 +319,47 @@ function move(obj)
     if(obj.dx==null || obj.dy==null) return;
     obj.x+=obj.dx*dt;
     obj.y+=obj.dy*dt;
+}
+function checkWinner()
+{
+    var maxValue=-1;
+    var winner=null;
+    Reflect.ownKeys(betbutton.members).forEach(el => {
+        if(el=="length") return;
+        if(maxValue<betbutton.members[el].count)
+        {
+            maxValue=betbutton.members[el].count;
+            winner=el;
+        }
+    });
+    if(betbutton.members[winner].chosen)
+    {
+        var tmp=new Object();
+        tmp.type="text";
+        tmp.color="#7F7";
+        tmp.caption="You won!";
+        drawable.push(tmp);
+    }
+    else
+    {
+        var tmp=new Object();
+        tmp.type="text";
+        tmp.color="#F77";
+        tmp.caption="FAILED!";
+        drawable.push(tmp);
+    }
+    var backbutton=new Object();
+    backbutton.type="rectangle";
+    backbutton.color="#222";
+    backbutton.fontSize=80;
+    backbutton.caption="Back";
+    backbutton.clickable=true;
+    backbutton.x=canvasW/2-100;
+    backbutton.y=canvasH/20*15;
+    backbutton.width=200;
+    backbutton.height=100;
+    backbutton.click=function(e) { level=0; setup();};
+    drawable.push(backbutton);
 }
 //main loop that draw the screen and perform the game logic
 function run()
@@ -240,11 +378,12 @@ function run()
         ctx.font = "150px Georgia, serif";
         ctx.textAlign="center";
         ctx.fillText("How long?",canvasW/2,canvasH/4);
-        canvas.style.cursor="default";
     }
     drawable.forEach(el => { move(el); draw(el); } );
+
+    canvas.style.cursor="default";
     drawable.forEach(el => { 
-        el.selected=isSelected(el); 
+        el.selected=isSelected(el);
         if(el.clickable && el.selected) 
         { 
             canvas.style.cursor="pointer"; 
@@ -254,6 +393,7 @@ function run()
             }
         } 
     });
+
     if(level==1)
     {
         //slowly disable slowmotion
@@ -291,8 +431,9 @@ function run()
         nBlack=0;
         nWhite=0;
         drawable.filter(el => el.type === "square").forEach(block => { if(block.color=="#FFF") nWhite++; else if(block.color=="#000") nBlack++; });
-        disegnaGraficoTorta(ctx, Math.min(canvasH,canvasW)/10, canvasW/10*2, canvasH/20*17, [nBlack,nWhite], ["#EEE","#333"]);
-
+        drawPieChart(ctx, Math.min(canvasH,canvasW)/10, canvasW/20*17, canvasH/20*17, [nBlack,nWhite], ["#333","#EEE"]);
+        betbutton.members['black'].count=nBlack;
+        betbutton.members['white'].count=nWhite;
     }
 
     //border
@@ -311,10 +452,8 @@ function run()
 //check if mouse is inside obj
 function isSelected(obj)
 {
-
     tx=mousex;
     ty=mousey;
-
     //circle-based
     if(obj.radius>0 && distanceFrom(tx,ty,obj.x,obj.y) < obj.radius)
         return true;
