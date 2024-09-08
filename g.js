@@ -18,9 +18,10 @@ var slowMoFactor=1;
 var fontSize=50;
 var paused=false;
 var betbutton=new Object();
+var nextLevel=0;
 
 //TODO DEBUG
-level=1;
+level=0;
 //TODO DEBUG
 
 //setup
@@ -53,9 +54,37 @@ function setup()
         betbutton.clickable=true;
         betbutton.members=null;
         betbutton.opacity=1;
-        betbutton.click=function(e) { startTimer(); this.clickable=false; this.opacity=0.2;};
+        betbutton.click=function(e) { startTimer(); this.clickable=false; this.opacity=0.2; };
         drawable.push(betbutton);   
-        paused=false;       
+        nextLevel=rand(1,2);//TODO cambia qui se aggiungi livelli
+        paused=false;    
+
+        var yinyang=new Object();
+        yinyang.type="levelCard";
+        yinyang.x=canvasW/5;
+        yinyang.y=canvasH/10*4;
+        yinyang.width=100;
+        yinyang.height=100;
+        yinyang.color="#000";
+        yinyang.fontSize=100;
+        yinyang.caption="☯";
+        yinyang.clickable=true;
+        yinyang.click=function(e) { drawable.filter(el => el.type === "levelCard").forEach(el => { el.chosen=false; }); yinyang.chosen=true;  nextLevel=1;}
+        drawable.push(yinyang);
+
+        var rps=new Object();
+        rps.type="levelCard";
+        rps.x=canvasW/5*2;
+        rps.y=canvasH/10*4;
+        rps.width=100;
+        rps.height=100;
+        rps.color="#000";
+        rps.fontSize=40;
+        rps.caption="👊✋\n✌️"
+        rps.clickable=true;
+        rps.click=function(e) { drawable.filter(el => el.type === "levelCard").forEach(el => { el.chosen=false; }); rps.chosen=true;  nextLevel=2;}
+        drawable.push(rps);
+
     }
     //yin-yang
     else if(level==1)
@@ -160,6 +189,109 @@ function setup()
         timer.fontSize=fontSize;
         timer.expired=function(e) { paused=true; checkWinner(); };
         drawable.push(timer);
+
+        //endless button
+        //TODO decidi quando aggiungerlo
+        var endless=new Object();
+        endless.type="rectangle";
+        endless.x=canvasW/10;
+        endless.y=canvasH/10*9+25;
+        endless.width=200;
+        endless.height=50;
+        endless.color="#00F";
+        endless.fontSize=40;
+        endless.caption="ENDLESS";
+        endless.clickable=true;
+        endless.click=function(e) { drawable.splice(drawable.indexOf(this),1); drawable.splice(drawable.indexOf(betbutton),1); drawable.splice(drawable.indexOf(timer),1); paused=false; slowMoFactor=1; }
+        drawable.push(endless);
+    }
+    //rockpaperscissors
+    else if(level==2)
+    {//rps.caption="👊✋\n✌️"
+        const radius=30;
+        for(i=0;i<3*5;i++)
+        {
+            var tmp=new Object();
+            tmp.x=rand(canvasW/20+radius*1.1,canvasW/20*19-radius*1.1);
+            tmp.y=rand(canvasH/20+radius*1.1,canvasH/20*16-radius*1.1);
+            tmp.type="circle";
+            tmp.color="#FFF";
+            if(i%3==0)
+            {
+                tmp.caption="👊";
+                tmp.color="#E77";
+                tmp.winover="#77E"
+            }
+            else if(i%3==1)
+            {
+                tmp.caption="✋";
+                tmp.color="#7E7";
+                tmp.winover="#E77"
+            }
+            else if(i%3==2)
+            {
+                tmp.caption="✌️";
+                tmp.color="#77E";
+                tmp.winover="#7E7"
+            }
+            tmp.radius=radius;
+            tmp.fontSize=40;
+            tmp.force=200;
+            tmp.direction=Math.random()*Math.PI*2;
+            tmp.dx=tmp.force*Math.sin(tmp.direction);
+            tmp.dy=tmp.force*Math.cos(tmp.direction);
+            drawable.push(tmp);
+        }
+
+        betbutton.clickable=true; 
+        betbutton.opacity=1;
+        betbutton.members=[];
+        var tmp=new Object();
+        tmp.color="#E77";
+        tmp.caption="Rock";
+        tmp.count=0;
+        tmp.selected=false;
+        tmp.chosen=false;
+        tmp.clickable=true;
+        drawable.push(tmp);
+        betbutton.members['rock']=tmp;
+        var tmp2=new Object();
+        tmp2.color="#7E7";
+        tmp2.caption="Paper";
+        tmp2.count=0;
+        tmp2.selected=false;
+        tmp2.chosen=false;
+        tmp2.clickable=true;
+        drawable.push(tmp2);     
+        betbutton.members['paper']=tmp2;
+        var tmp3=new Object();
+        tmp3.color="#77E";
+        tmp3.caption="Scissor";
+        tmp3.count=0;
+        tmp3.selected=false;
+        tmp3.chosen=false;
+        tmp3.clickable=true;
+        drawable.push(tmp3);     
+        betbutton.members['scissor']=tmp3;    
+        drawable.push(betbutton);  
+        betbutton.clickable=false;
+        betbutton.opacity=0.2;  
+        paused=true;
+
+        var timer=new Object();
+        timer.type="timer";
+        timer.x=canvasW/2-50;
+        timer.y=canvasH/20*18+50;
+        timer.seconds=0;
+        timer.limit=13;
+        timer.fontSize=fontSize;
+        timer.expired=function(e) { paused=true; checkWinner(); };
+        drawable.push(timer);
+
+        tmp.click=function(e) { tmp.chosen=true; tmp2.chosen=false; tmp3.chosen=false; betbutton.clickable=true; betbutton.opacity=1; };
+        tmp2.click=function(e) { tmp2.chosen=true; tmp.chosen=false; tmp3.chosen=false; betbutton.clickable=true; betbutton.opacity=1; };
+        tmp3.click=function(e) { tmp3.chosen=true; tmp.chosen=false; tmp2.chosen=false; betbutton.clickable=true; betbutton.opacity=1; };
+        betbutton.click=function(e) { paused=false; this.clickable=false; this.opacity=0.2; tmp.cliable=false; tmp2.cliable=false; tmp3.cliable=false;};
     }
 }
 function startTimer()
@@ -171,7 +303,7 @@ function startTimer()
     tmp.seconds=0;
     tmp.limit=13;
     tmp.fontSize=50;
-    tmp.expired=function(e) { level++; setup(); };
+    tmp.expired=function(e) { level=nextLevel; setup(); };
     drawable.push(tmp);
 }
 function drawPieChart(ctx, raggio, x, y, valori, colori) {
@@ -214,11 +346,43 @@ function draw(obj)
         ctx.beginPath();
         ctx.arc(obj.x, obj.y, obj.radius, 0, 2 * Math.PI);
         ctx.fill(); 
+        if(obj.caption)
+        {
+            ctx.fillStyle="#000";
+            ctx.font = obj.fontSize+"px Georgia, serif";
+            ctx.textAlign="center";
+            ctx.fillText(obj.caption,obj.x,obj.y);
+        }
     }
     else if(obj.type=="square")
     {
         ctx.fillStyle=obj.color;
         ctx.fillRect(obj.x-obj.size/2,obj.y-obj.size/2,obj.size,obj.size);
+    }
+    else if(obj.type=="levelCard")
+    {
+        if(obj.chosen)
+            ctx.fillStyle="yellow";
+        else
+            ctx.fillStyle="#555";
+        ctx.globalAlpha=0.7;
+        ctx.fillRect(obj.x-5,obj.y-5,obj.width+10,obj.height+10);
+        ctx.globalAlpha=1;
+        ctx.fillStyle=fg;
+        ctx.fillRect(obj.x,obj.y,obj.width,obj.height);
+        if(obj.caption)
+        {
+            ctx.fillStyle=obj.color;
+            ctx.font = obj.fontSize+"px Georgia, serif";
+            ctx.textAlign="center";
+            if(obj.caption.includes("\n"))
+            {
+                ctx.fillText(obj.caption.split("\n")[0],obj.x+obj.width/2,obj.y+obj.height-obj.fontSize*1.8);
+                ctx.fillText(obj.caption.split("\n")[1],obj.x+obj.width/2,obj.y+obj.height-obj.fontSize/1.5);
+            }
+            else
+                ctx.fillText(obj.caption,obj.x+obj.width/2,obj.y+obj.height-obj.fontSize/2);
+        }
     }
     else if(obj.type=="rectangle")
     {
@@ -283,7 +447,7 @@ function draw(obj)
             });
         }
     }
-    else if(obj.type=="text")
+    else if(obj.type=="fulltext")
     {
         ctx.textAlign = "center";
         let fontSize = 9999;
@@ -309,8 +473,16 @@ function move(obj)
     if(paused) return;
     if(obj.type=="timer")
     {
+        //manage slowmotion
+        if(level==1)
+        {
+            if(obj.limit-obj.seconds<1 && slowMoFactor>0.06)
+                slowMoFactor*=0.98;
+            else if(slowMoFactor<1)
+                slowMoFactor+=0.01;    
+        }
         obj.seconds+=dt;
-        if(obj.seconds>obj.limit)
+        if(Math.round(obj.seconds*100)/100>=obj.limit-dt)//we ENSURE we don't see 13
         {
             obj.expired();
         }
@@ -335,7 +507,7 @@ function checkWinner()
     if(betbutton.members[winner].chosen)
     {
         var tmp=new Object();
-        tmp.type="text";
+        tmp.type="fulltext";
         tmp.color="#7F7";
         tmp.caption="You won!";
         drawable.push(tmp);
@@ -343,7 +515,7 @@ function checkWinner()
     else
     {
         var tmp=new Object();
-        tmp.type="text";
+        tmp.type="fulltext";
         tmp.color="#F77";
         tmp.caption="FAILED!";
         drawable.push(tmp);
@@ -374,10 +546,30 @@ function run()
     ctx.fillRect(0,0,canvasW,canvasH);
     if(level==0)
     {
+        const title="DECIDOPHOBIA"
         ctx.fillStyle=fg;
-        ctx.font = "150px Georgia, serif";
-        ctx.textAlign="center";
-        ctx.fillText("How long?",canvasW/2,canvasH/4);
+        ctx.textAlign = "center";
+        let fontSize = 999;
+        ctx.font = fontSize + "px Georgia, serif";
+        let textWidth = ctx.measureText(title).width;
+        while (textWidth > canvasW) {
+            fontSize--;  // Diminuisci la dimensione del font
+            ctx.font = fontSize + "px Georgia, serif";
+            textWidth = ctx.measureText(title).width;
+        }
+        for(i=0;i<50;i++)
+        {
+            ctx.fillText(title,rand(0,3*i)/10+i/2+canvasW/2,50+fontSize/2-i);
+            ctx.globalAlpha=1/i;
+        }        
+        ctx.globalAlpha=1;
+    }
+    else if(level==2)
+    {
+        ctx.fillStyle=fg;
+        ctx.fillRect(canvasW/20-5,canvasH/20-5,canvasW/20*18+10,canvasH/20*15+10);
+        ctx.fillStyle=bg;
+        ctx.fillRect(canvasW/20,canvasH/20,canvasW/20*18,canvasH/20*15);
     }
     drawable.forEach(el => { move(el); draw(el); } );
 
@@ -396,9 +588,6 @@ function run()
 
     if(level==1)
     {
-        //slowly disable slowmotion
-        if(slowMoFactor<1)
-            slowMoFactor+=0.01;
         //bounce
         drawable.filter(el => el.type === "circle").forEach(el => {
             //borders
@@ -434,6 +623,86 @@ function run()
         drawPieChart(ctx, Math.min(canvasH,canvasW)/10, canvasW/20*17, canvasH/20*17, [nBlack,nWhite], ["#333","#EEE"]);
         betbutton.members['black'].count=nBlack;
         betbutton.members['white'].count=nWhite;
+    }
+    else if(level==2)
+    {
+        //bounce logic
+        drawable.filter(el => el.type === "circle").forEach(el => {
+            // Borders
+            if (el.x - el.radius < canvasW / 20) {
+                el.x = canvasW / 20 + el.radius;  
+                el.dx *= -1;            } 
+            else if (el.x + el.radius > canvasW / 20 * 19) {
+                el.x = canvasW / 20 * 19 - el.radius;       
+                el.dx *= -1;
+            }
+
+            if (el.y - el.radius < canvasH / 20) {
+                el.y = canvasH / 20 + el.radius;  
+                el.dy *= -1;
+            } 
+            else if (el.y + el.radius > canvasH / 20 * 16) {
+                el.y = canvasH / 20 * 16 - el.radius;       
+                el.dy *= -1;
+            }
+
+            //bounce between them
+            drawable.filter(el => el.type === "circle").forEach(ball => {
+                if(ball===el) return;
+                let dx = ball.x - el.x;
+                let dy = ball.y - el.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Controlla la collisione
+                if (distance < (el.radius + ball.radius)) {
+                    // Normale unitaria
+                    let nx = dx / distance;
+                    let ny = dy / distance;
+
+                    // Correzione di posizione per evitare compenetrazione
+                    let overlap = (el.radius + ball.radius) - distance;
+                    let correction = overlap / 2;
+                    
+                    // Sposta indietro gli oggetti in modo che si tocchino appena
+                    el.x -= correction * nx;
+                    el.y -= correction * ny;
+                    ball.x += correction * nx;
+                    ball.y += correction * ny;
+
+                    // Calcola il fattore di impulso per le nuove velocità
+                    let p = 2 * (el.dx * nx + el.dy * ny - ball.dx * nx - ball.dy * ny) / 2;
+
+                    // Aggiorna le velocità
+                    el.dx -= p * nx;
+                    el.dy -= p * ny;
+                    ball.dx += p * nx;
+                    ball.dy += p * ny;
+
+                    //se sono diversi, scegli il vincitore
+                    if(el.winover==ball.color)
+                    {
+                        ball.color=el.color;
+                        ball.caption=el.caption;
+                        ball.winover=el.winover;
+                    }
+                    else if(ball.winover==el.color)
+                    {
+                        el.color=ball.color;
+                        el.caption=ball.caption;
+                        el.winover=ball.winover;
+                    }
+                }
+            });
+        });
+        //count
+        nRock=0;
+        nPaper=0;
+        nScissor=0;
+        drawable.filter(el => el.type === "circle").forEach(ball => { if(ball.color=="#E77") nRock++; else if(ball.color=="#7E7") nPaper++; else if(ball.color=="#77E") nScissor++; });
+        drawPieChart(ctx, canvasH/20*1.2, canvasW/20*17, canvasH/20*18, [nRock,nPaper,nScissor], ["#E77","#7E7","#77E"]);
+        betbutton.members['rock'].count=nRock;
+        betbutton.members['paper'].count=nPaper;
+        betbutton.members['scissor'].count=nScissor;
     }
 
     //border
