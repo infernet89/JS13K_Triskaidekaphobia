@@ -19,6 +19,10 @@ var fontSize=50;
 var paused=false;
 var betbutton=new Object();
 var nextLevel=0;
+var endlessMode;
+var groupCaptions;
+var groupColors
+var groupCodes;
 
 //TODO DEBUG
 level=0;
@@ -49,6 +53,7 @@ run(); //at the end of run(), we call itself again. Then calculate the timing fo
 function setup()
 {
     drawable=[];
+    endlessMode=false;
     if(level==0)
     {
         betbutton.clickable=true;
@@ -56,35 +61,73 @@ function setup()
         betbutton.opacity=1;
         betbutton.click=function(e) { startTimer(); this.clickable=false; this.opacity=0.2; };
         drawable.push(betbutton);   
-        nextLevel=rand(1,2);//TODO cambia qui se aggiungi livelli
+        nextLevel=rand(1,4);//TODO cambia qui se aggiungi livelli
         paused=false;    
+        slowMoFactor=1;
 
         var yinyang=new Object();
         yinyang.type="levelCard";
-        yinyang.x=canvasW/5;
+        yinyang.x=canvasW/5-50;
         yinyang.y=canvasH/10*4;
         yinyang.width=100;
         yinyang.height=100;
         yinyang.color="#000";
         yinyang.fontSize=100;
         yinyang.caption="☯";
+        yinyang.nWon=localStorage.getItem("decidophobia.1.won");
+        if(!yinyang.nWon)
+            yinyang.nWon=0;
         yinyang.clickable=true;
         yinyang.click=function(e) { drawable.filter(el => el.type === "levelCard").forEach(el => { el.chosen=false; }); yinyang.chosen=true;  nextLevel=1;}
         drawable.push(yinyang);
 
         var rps=new Object();
         rps.type="levelCard";
-        rps.x=canvasW/5*2;
+        rps.x=canvasW/5*2-50;
         rps.y=canvasH/10*4;
         rps.width=100;
         rps.height=100;
         rps.color="#000";
         rps.fontSize=40;
         rps.caption="👊✋\n✌️"
+        rps.nWon=localStorage.getItem("decidophobia.2.won");
+        if(!rps.nWon)
+            rps.nWon=0;
         rps.clickable=true;
         rps.click=function(e) { drawable.filter(el => el.type === "levelCard").forEach(el => { el.chosen=false; }); rps.chosen=true;  nextLevel=2;}
         drawable.push(rps);
 
+        var cgte=new Object();
+        cgte.type="levelCard";
+        cgte.x=canvasW/5*3-50;
+        cgte.y=canvasH/10*4;
+        cgte.width=100;
+        cgte.height=100;
+        cgte.color="#000";
+        cgte.fontSize=40;
+        cgte.caption="🐱🐶\n🐭🐘"
+        cgte.nWon=localStorage.getItem("decidophobia.3.won");
+        if(!cgte.nWon)
+            cgte.nWon=0;
+        cgte.clickable=true;
+        cgte.click=function(e) { drawable.filter(el => el.type === "levelCard").forEach(el => { el.chosen=false; }); cgte.chosen=true;  nextLevel=3;}
+        drawable.push(cgte);
+
+        var zrscu=new Object();
+        zrscu.type="levelCard";
+        zrscu.x=canvasW/5*4-50;
+        zrscu.y=canvasH/10*4;
+        zrscu.width=100;
+        zrscu.height=100;
+        zrscu.color="#000";
+        zrscu.fontSize=30;
+        zrscu.caption="🐸🐍\n🦟\n🐶🧑"
+        zrscu.nWon=localStorage.getItem("decidophobia.4.won");
+        if(!zrscu.nWon)
+            zrscu.nWon=0;
+        zrscu.clickable=true;
+        zrscu.click=function(e) { drawable.filter(el => el.type === "levelCard").forEach(el => { el.chosen=false; }); zrscu.chosen=true;  nextLevel=4;}
+        drawable.push(zrscu);
     }
     //yin-yang
     else if(level==1)
@@ -187,53 +230,65 @@ function setup()
         timer.seconds=0;
         timer.limit=13;
         timer.fontSize=fontSize;
-        timer.expired=function(e) { paused=true; checkWinner(); };
+        timer.expired=function(e) { checkWinner(); };
         drawable.push(timer);
 
         //endless button
-        //TODO decidi quando aggiungerlo
-        var endless=new Object();
-        endless.type="rectangle";
-        endless.x=canvasW/10;
-        endless.y=canvasH/10*9+25;
-        endless.width=200;
-        endless.height=50;
-        endless.color="#00F";
-        endless.fontSize=40;
-        endless.caption="ENDLESS";
-        endless.clickable=true;
-        endless.click=function(e) { drawable.splice(drawable.indexOf(this),1); drawable.splice(drawable.indexOf(betbutton),1); drawable.splice(drawable.indexOf(timer),1); paused=false; slowMoFactor=1; }
-        drawable.push(endless);
+        if(localStorage.getItem("decidophobia."+level+".won")>2)
+        {
+            var endless=new Object();
+            endless.type="rectangle";
+            endless.x=canvasW/10;
+            endless.y=canvasH/10*9+25;
+            endless.width=200;
+            endless.height=50;
+            endless.color="#00F";
+            endless.fontSize=40;
+            endless.caption="ENDLESS";
+            endless.clickable=true;
+            endless.click=function(e) { drawable.splice(drawable.indexOf(this),1); drawable.splice(drawable.indexOf(betbutton),1); drawable.splice(drawable.indexOf(timer),1); paused=false; slowMoFactor=1; endlessMode=true; }
+            drawable.push(endless);
+        }
     }
-    //rockpaperscissors
-    else if(level==2)
-    {//rps.caption="👊✋\n✌️"
+    //evolutive chain
+    else if(level==2 || level==3 || level==4)
+    {
         const radius=30;
-        for(i=0;i<3*5;i++)
+        var nGroups=0;
+        //rockpaperscissors
+        if(level==2)
+        {
+            nGroups=3;
+            groupCodes=["rock","paper","scissor"];
+            groupCaptions=["👊","✋","✌️"];
+            groupColors=["#E77","#7E7","#77E"];
+        }
+        //canegattopoelefante
+        else if(level==3)
+        {
+            nGroups=4;
+            groupCodes=["elephant","mouse","cat","dog"];
+            groupCaptions=["🐘","🐭","🐱","🐶"];
+            groupColors=["#C33149","#00FFCD","#F3D9B1","#A8C256"];
+        }
+        else if(level==4)
+        {
+            nGroups=5;
+            groupCodes=["mosquito","frog","snake","dog","man"];
+            groupCaptions=["🦟","🐸","🐍","🐶","🧑"];
+            groupColors = ["#8B5E3C", "#6FAF8F", "#7A89C2", "#C47F96", "#D6C37A"];    
+        }
+        for(i=0;i<nGroups*(5-nGroups+3);i++)
         {
             var tmp=new Object();
             tmp.x=rand(canvasW/20+radius*1.1,canvasW/20*19-radius*1.1);
             tmp.y=rand(canvasH/20+radius*1.1,canvasH/20*16-radius*1.1);
             tmp.type="circle";
             tmp.color="#FFF";
-            if(i%3==0)
-            {
-                tmp.caption="👊";
-                tmp.color="#E77";
-                tmp.winover="#77E"
-            }
-            else if(i%3==1)
-            {
-                tmp.caption="✋";
-                tmp.color="#7E7";
-                tmp.winover="#E77"
-            }
-            else if(i%3==2)
-            {
-                tmp.caption="✌️";
-                tmp.color="#77E";
-                tmp.winover="#7E7"
-            }
+            tmp.caption=groupCaptions[i%nGroups];
+            tmp.color=groupColors[i%nGroups],
+            tmp.code=groupCodes[i%nGroups];
+            tmp.winover=groupCodes[(i-1+nGroups)%nGroups];//win over the previous element
             tmp.radius=radius;
             tmp.fontSize=40;
             tmp.force=200;
@@ -246,33 +301,21 @@ function setup()
         betbutton.clickable=true; 
         betbutton.opacity=1;
         betbutton.members=[];
-        var tmp=new Object();
-        tmp.color="#E77";
-        tmp.caption="Rock";
-        tmp.count=0;
-        tmp.selected=false;
-        tmp.chosen=false;
-        tmp.clickable=true;
-        drawable.push(tmp);
-        betbutton.members['rock']=tmp;
-        var tmp2=new Object();
-        tmp2.color="#7E7";
-        tmp2.caption="Paper";
-        tmp2.count=0;
-        tmp2.selected=false;
-        tmp2.chosen=false;
-        tmp2.clickable=true;
-        drawable.push(tmp2);     
-        betbutton.members['paper']=tmp2;
-        var tmp3=new Object();
-        tmp3.color="#77E";
-        tmp3.caption="Scissor";
-        tmp3.count=0;
-        tmp3.selected=false;
-        tmp3.chosen=false;
-        tmp3.clickable=true;
-        drawable.push(tmp3);     
-        betbutton.members['scissor']=tmp3;    
+        for(i=0;i<nGroups;i++)
+        {
+            var tmp=new Object();
+            tmp.color=groupColors[i];
+            tmp.caption=groupCodes[i].charAt(0).toUpperCase() + groupCodes[i].slice(1);
+            tmp.count=0;
+            tmp.selected=false;
+            tmp.chosen=false;
+            tmp.clickable=true;
+            drawable.push(tmp);
+            betbutton.members[groupCodes[i]]=tmp;
+            tmp.click=function(e) { Object.values(betbutton.members).forEach(member => member.chosen = false); this.chosen=true; betbutton.clickable=true; betbutton.opacity=1; };
+        }
+        betbutton.click=function(e) { paused=false; this.clickable=false; this.opacity=0.2; Object.values(betbutton.members).forEach(member => member.clickable = false);};
+
         drawable.push(betbutton);  
         betbutton.clickable=false;
         betbutton.opacity=0.2;  
@@ -285,13 +328,25 @@ function setup()
         timer.seconds=0;
         timer.limit=13;
         timer.fontSize=fontSize;
-        timer.expired=function(e) { paused=true; checkWinner(); };
+        timer.expired=function(e) { checkWinner(); };
         drawable.push(timer);
 
-        tmp.click=function(e) { tmp.chosen=true; tmp2.chosen=false; tmp3.chosen=false; betbutton.clickable=true; betbutton.opacity=1; };
-        tmp2.click=function(e) { tmp2.chosen=true; tmp.chosen=false; tmp3.chosen=false; betbutton.clickable=true; betbutton.opacity=1; };
-        tmp3.click=function(e) { tmp3.chosen=true; tmp.chosen=false; tmp2.chosen=false; betbutton.clickable=true; betbutton.opacity=1; };
-        betbutton.click=function(e) { paused=false; this.clickable=false; this.opacity=0.2; tmp.cliable=false; tmp2.cliable=false; tmp3.cliable=false;};
+        //endless button
+        if(localStorage.getItem("decidophobia."+level+".won")>2)
+        {
+            var endless=new Object();
+            endless.type="rectangle";
+            endless.x=canvasW/10;
+            endless.y=canvasH/10*9+25;
+            endless.width=200;
+            endless.height=50;
+            endless.color="#00F";
+            endless.fontSize=40;
+            endless.caption="ENDLESS";
+            endless.clickable=true;
+            endless.click=function(e) { drawable.splice(drawable.indexOf(this),1); drawable.splice(drawable.indexOf(betbutton),1); drawable.splice(drawable.indexOf(timer),1); paused=false; slowMoFactor=1; endlessMode=true; }
+            drawable.push(endless);            
+        }
     }
 }
 function startTimer()
@@ -375,14 +430,24 @@ function draw(obj)
             ctx.fillStyle=obj.color;
             ctx.font = obj.fontSize+"px Georgia, serif";
             ctx.textAlign="center";
-            if(obj.caption.includes("\n"))
+            //this is bad, sorry.
+            if(obj.caption.includes("\n") && obj.caption.split("\n").length==2)
             {
                 ctx.fillText(obj.caption.split("\n")[0],obj.x+obj.width/2,obj.y+obj.height-obj.fontSize*1.8);
                 ctx.fillText(obj.caption.split("\n")[1],obj.x+obj.width/2,obj.y+obj.height-obj.fontSize/1.5);
             }
+            else if(obj.caption.includes("\n") && obj.caption.split("\n").length==3)
+            {
+                ctx.fillText(obj.caption.split("\n")[0],obj.x+obj.width/2,obj.y+obj.height-obj.fontSize*2.6);
+                ctx.fillText(obj.caption.split("\n")[1],obj.x+obj.width/2,obj.y+obj.height-obj.fontSize*1.6);
+                ctx.fillText(obj.caption.split("\n")[2],obj.x+obj.width/2,obj.y+obj.height-obj.fontSize/1.6);
+            }
             else
                 ctx.fillText(obj.caption,obj.x+obj.width/2,obj.y+obj.height-obj.fontSize/2);
         }
+        ctx.fillStyle="#FFF";
+        ctx.font = "15px Georgia, serif";
+        ctx.fillText("Won: "+obj.nWon,obj.x+obj.width/2,obj.y+obj.height+20);
     }
     else if(obj.type=="rectangle")
     {
@@ -496,6 +561,7 @@ function checkWinner()
 {
     var maxValue=-1;
     var winner=null;
+    paused=true;
     Reflect.ownKeys(betbutton.members).forEach(el => {
         if(el=="length") return;
         if(maxValue<betbutton.members[el].count)
@@ -504,13 +570,25 @@ function checkWinner()
             winner=el;
         }
     });
-    if(betbutton.members[winner].chosen)
+    if(endlessMode)
+    {
+        var tmp=new Object();
+        tmp.type="fulltext";
+        tmp.color="#FFF";
+        tmp.caption="It's done.";
+        drawable.push(tmp);
+    }
+    else if(betbutton.members[winner].chosen)
     {
         var tmp=new Object();
         tmp.type="fulltext";
         tmp.color="#7F7";
         tmp.caption="You won!";
         drawable.push(tmp);
+        var nWon=localStorage.getItem("decidophobia."+level+".won");
+        if(!nWon)
+            nWon=0;
+        localStorage.setItem("decidophobia."+level+".won", nWon+1);
     }
     else
     {
@@ -532,6 +610,7 @@ function checkWinner()
     backbutton.height=100;
     backbutton.click=function(e) { level=0; setup();};
     drawable.push(backbutton);
+    
 }
 //main loop that draw the screen and perform the game logic
 function run()
@@ -546,6 +625,7 @@ function run()
     ctx.fillRect(0,0,canvasW,canvasH);
     if(level==0)
     {
+        //title
         const title="DECIDOPHOBIA"
         ctx.fillStyle=fg;
         ctx.textAlign = "center";
@@ -559,12 +639,19 @@ function run()
         }
         for(i=0;i<50;i++)
         {
-            ctx.fillText(title,rand(0,3*i)/10+i/2+canvasW/2,50+fontSize/2-i);
+            ctx.fillText(title,rand(0,i)/10+i/2+canvasW/2,50+fontSize/2-i);
             ctx.globalAlpha=1/i;
         }        
         ctx.globalAlpha=1;
+        //which scenario will load? Choose your prediction (don't worry, you have time to change your mind.)
+        ctx.font = "50px Georgia, serif";
+        ctx.fillText("Which scenario will load?",canvasW/2,canvasH/10*8);
+        ctx.fillText("Choose your prediction.",canvasW/2,canvasH/10*8+50);
+        ctx.font = "20px Georgia, serif";
+        ctx.fillText("(don't worry, you have time to change your mind.)",canvasW/2,canvasH/10*8+100);
+
     }
-    else if(level==2)
+    else if(level==2 || level==3 || level==4)
     {
         ctx.fillStyle=fg;
         ctx.fillRect(canvasW/20-5,canvasH/20-5,canvasW/20*18+10,canvasH/20*15+10);
@@ -624,7 +711,7 @@ function run()
         betbutton.members['black'].count=nBlack;
         betbutton.members['white'].count=nWhite;
     }
-    else if(level==2)
+    else if(level==2 || level==3 || level==4)
     {
         //bounce logic
         drawable.filter(el => el.type === "circle").forEach(el => {
@@ -679,14 +766,16 @@ function run()
                     ball.dy += p * ny;
 
                     //se sono diversi, scegli il vincitore
-                    if(el.winover==ball.color)
+                    if(el.winover==ball.code)
                     {
+                        ball.code=el.code;
                         ball.color=el.color;
                         ball.caption=el.caption;
                         ball.winover=el.winover;
                     }
-                    else if(ball.winover==el.color)
+                    else if(ball.winover==el.code)
                     {
+                        el.code=ball.code;
                         el.color=ball.color;
                         el.caption=ball.caption;
                         el.winover=ball.winover;
@@ -694,15 +783,16 @@ function run()
                 }
             });
         });
-        //count
-        nRock=0;
-        nPaper=0;
-        nScissor=0;
-        drawable.filter(el => el.type === "circle").forEach(ball => { if(ball.color=="#E77") nRock++; else if(ball.color=="#7E7") nPaper++; else if(ball.color=="#77E") nScissor++; });
-        drawPieChart(ctx, canvasH/20*1.2, canvasW/20*17, canvasH/20*18, [nRock,nPaper,nScissor], ["#E77","#7E7","#77E"]);
-        betbutton.members['rock'].count=nRock;
-        betbutton.members['paper'].count=nPaper;
-        betbutton.members['scissor'].count=nScissor;
+        nGroups=groupCodes.length;
+        (groupCounts = []).length = nGroups; 
+        groupCounts.fill(0);
+        drawable.filter(el => el.type === "circle").forEach(ball => { groupCounts[groupCodes.indexOf(ball.code)]++; });
+        if(!paused && Math.max(groupCounts)==groupCounts.reduce((a, b) => a + b, 0))
+            checkWinner();
+        else 
+            drawPieChart(ctx, canvasH/20*1.2, canvasW/20*17, canvasH/20*18, groupCounts, groupColors);
+        for(i=0;i<nGroups;i++)
+            betbutton.members[groupCodes[i]].count=groupCounts[i];
     }
 
     //border
