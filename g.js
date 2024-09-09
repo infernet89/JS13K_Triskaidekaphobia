@@ -588,7 +588,7 @@ function checkWinner()
         var nWon=localStorage.getItem("decidophobia."+level+".won");
         if(!nWon)
             nWon=0;
-        localStorage.setItem("decidophobia."+level+".won", nWon+1);
+        localStorage.setItem("decidophobia."+level+".won", Number(nWon)+1);
     }
     else
     {
