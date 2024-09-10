@@ -25,7 +25,8 @@ var groupColors
 var groupCodes;
 
 //TODO DEBUG
-level=0;
+level=5;
+//setTimeout(function(e) { paused=false; },1)
 //TODO DEBUG
 
 //setup
@@ -251,10 +252,13 @@ function setup()
         }
     }
     //evolutive chain
-    else if(level==2 || level==3 || level==4)
+    else if(level==2 || level==3 || level==4 || level==5)
     {
-        const radius=30;
+        var radius=30;
         var nGroups=0;
+        var totalnumber=0;
+        var ballFontSize=40;
+
         //rockpaperscissors
         if(level==2)
         {
@@ -262,6 +266,7 @@ function setup()
             groupCodes=["rock","paper","scissor"];
             groupCaptions=["👊","✋","✌️"];
             groupColors=["#E77","#7E7","#77E"];
+            totalnumber=15;
         }
         //canegattopoelefante
         else if(level==3)
@@ -270,15 +275,29 @@ function setup()
             groupCodes=["elephant","mouse","cat","dog"];
             groupCaptions=["🐘","🐭","🐱","🐶"];
             groupColors=["#C33149","#00FFCD","#F3D9B1","#A8C256"];
+            totalnumber=16;
         }
+        //gruppo da 5
         else if(level==4)
         {
             nGroups=5;
             groupCodes=["mosquito","frog","snake","dog","man"];
             groupCaptions=["🦟","🐸","🐍","🐶","🧑"];
-            groupColors = ["#8B5E3C", "#6FAF8F", "#7A89C2", "#C47F96", "#D6C37A"];    
+            groupColors = ["#8B5E3C", "#6FAF8F", "#7A89C2", "#C47F96", "#D6C37A"];
+            totalnumber=15;
         }
-        for(i=0;i<nGroups*(5-nGroups+3);i++)
+        //uomini vs conigli
+        else if(level==5)
+        {
+            nGroups=4;
+            radius=20;
+            ballFontSize=25;
+            groupCodes=["man","woman","rabbit","rabbit"];
+            groupCaptions=["👨","👩","🐇","🐇"];
+            groupColors=["#4281ED","#FF70FD","#BF6119","#BF6119"];
+            totalnumber=11;
+        }
+        for(i=0;i<totalnumber;i++)
         {
             var tmp=new Object();
             tmp.x=rand(canvasW/20+radius*1.1,canvasW/20*19-radius*1.1);
@@ -290,7 +309,7 @@ function setup()
             tmp.code=groupCodes[i%nGroups];
             tmp.winover=groupCodes[(i-1+nGroups)%nGroups];//win over the previous element
             tmp.radius=radius;
-            tmp.fontSize=40;
+            tmp.fontSize=ballFontSize;
             tmp.force=200;
             tmp.direction=Math.random()*Math.PI*2;
             tmp.dx=tmp.force*Math.sin(tmp.direction);
@@ -301,6 +320,13 @@ function setup()
         betbutton.clickable=true; 
         betbutton.opacity=1;
         betbutton.members=[];
+        //this has different betting groups
+        if(level==5)
+        {
+            groupCodes=["human","rabbit"];
+            groupColors=["#FF7AC8","#F5DFD5"];
+            nGroups=2
+        }
         for(i=0;i<nGroups;i++)
         {
             var tmp=new Object();
@@ -348,6 +374,7 @@ function setup()
             drawable.push(endless);            
         }
     }
+
 }
 function startTimer()
 {
@@ -395,6 +422,8 @@ function draw(obj)
     ctx.save();
     if(obj.opacity)
         ctx.globalAlpha=obj.opacity;
+    if(obj.cooldown)
+        ctx.globalAlpha=1-obj.cooldown;
     if(obj.type=="circle")
     {
         ctx.fillStyle=obj.color;
@@ -556,6 +585,8 @@ function move(obj)
     if(obj.dx==null || obj.dy==null) return;
     obj.x+=obj.dx*dt;
     obj.y+=obj.dy*dt;
+    if(obj.cooldown)
+        obj.cooldown-=dt;
 }
 function checkWinner()
 {
@@ -651,7 +682,7 @@ function run()
         ctx.fillText("(don't worry, you have time to change your mind.)",canvasW/2,canvasH/10*8+100);
 
     }
-    else if(level==2 || level==3 || level==4)
+    else if(level==2 || level==3 || level==4 || level==5)
     {
         ctx.fillStyle=fg;
         ctx.fillRect(canvasW/20-5,canvasH/20-5,canvasW/20*18+10,canvasH/20*15+10);
@@ -711,7 +742,7 @@ function run()
         betbutton.members['black'].count=nBlack;
         betbutton.members['white'].count=nWhite;
     }
-    else if(level==2 || level==3 || level==4)
+    else if(level==2 || level==3 || level==4 || level==5)
     {
         //bounce logic
         drawable.filter(el => el.type === "circle").forEach(el => {
@@ -765,20 +796,85 @@ function run()
                     ball.dx += p * nx;
                     ball.dy += p * ny;
 
-                    //se sono diversi, scegli il vincitore
-                    if(el.winover==ball.code)
+                    //check if generate childern
+                    if(level==5)
                     {
-                        ball.code=el.code;
-                        ball.color=el.color;
-                        ball.caption=el.caption;
-                        ball.winover=el.winover;
+                        if(el.cooldown>0 || ball.cooldown>0)
+                        {
+                            //do nothing
+                        }
+                        else if(el.code=="rabbit" && ball.code=="rabbit")
+                        {
+                            var tmp=new Object();
+                            tmp.x=(el.x+ball.x)/2;
+                            tmp.y=(el.y+ball.y)/2;
+                            tmp.type="circle";
+                            tmp.color="#FFF";
+                            tmp.caption="🐇";
+                            tmp.color="#BF6119",
+                            tmp.code="rabbit";
+                            tmp.radius=20;
+                            tmp.fontSize=25;
+                            tmp.force=200;
+                            tmp.direction=Math.random()*Math.PI*2;
+                            tmp.dx=tmp.force*Math.sin(tmp.direction);
+                            tmp.dy=tmp.force*Math.cos(tmp.direction);
+                            drawable.push(tmp);
+                            tmp.cooldown=1;
+                            ball.cooldown=0.5;
+                            el.cooldown=0.5;
+                        }  
+                        else if( (el.code=="man" && ball.code=="woman") || (el.code=="woman" && ball.code=="man") )
+                        {
+                            if(rand(0,1))
+                            {
+                                genderCode="man";
+                                genderColor="#4281ED";
+                                genderCaption="👨";
+                            }
+                            else
+                            {
+                                genderCode="woman";
+                                genderColor="#FF70FD";
+                                genderCaption="👩";
+                            }
+                            var tmp=new Object();
+                            tmp.x=(el.x+ball.x)/2;
+                            tmp.y=(el.y+ball.y)/2;
+                            tmp.type="circle";
+                            tmp.color="#FFF";
+                            tmp.caption=genderCaption;
+                            tmp.color=genderColor,
+                            tmp.code=genderCode;
+                            tmp.radius=20;
+                            tmp.fontSize=25;
+                            tmp.force=200;
+                            tmp.direction=Math.random()*Math.PI*2;
+                            tmp.dx=tmp.force*Math.sin(tmp.direction);
+                            tmp.dy=tmp.force*Math.cos(tmp.direction);
+                            drawable.push(tmp);
+                            tmp.cooldown=1;
+                            ball.cooldown=0.5;
+                            el.cooldown=0.5;
+                        }
                     }
-                    else if(ball.winover==el.code)
+                    else
                     {
-                        el.code=ball.code;
-                        el.color=ball.color;
-                        el.caption=ball.caption;
-                        el.winover=ball.winover;
+                        //se sono diversi, scegli il vincitore
+                        if(el.winover==ball.code)
+                        {
+                            ball.code=el.code;
+                            ball.color=el.color;
+                            ball.caption=el.caption;
+                            ball.winover=el.winover;
+                        }
+                        else if(ball.winover==el.code)
+                        {
+                            el.code=ball.code;
+                            el.color=ball.color;
+                            el.caption=ball.caption;
+                            el.winover=ball.winover;
+                        }
                     }
                 }
             });
@@ -786,7 +882,10 @@ function run()
         nGroups=groupCodes.length;
         (groupCounts = []).length = nGroups; 
         groupCounts.fill(0);
-        drawable.filter(el => el.type === "circle").forEach(ball => { groupCounts[groupCodes.indexOf(ball.code)]++; });
+        if(level==5)
+            drawable.filter(el => el.type === "circle").forEach(ball => { groupCounts[groupCodes.indexOf((ball.code=="rabbit"?"rabbit":"human"))]++; });
+        else
+            drawable.filter(el => el.type === "circle").forEach(ball => { groupCounts[groupCodes.indexOf(ball.code)]++; });
         if(!paused && Math.max(groupCounts)==groupCounts.reduce((a, b) => a + b, 0))
             checkWinner();
         else 
@@ -802,7 +901,10 @@ function run()
     ctx.fillRect(0,0,1,canvasH);
     ctx.fillRect(canvasW-1,0,1,canvasH);
 
-    setTimeout(run);
+    if(paused)
+        setTimeout(run,10);
+    else
+        setTimeout(run);
 }
 
 /*#############
