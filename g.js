@@ -18,6 +18,7 @@ var slowMoFactor=1;
 var fontSize=50;
 var paused=false;
 var betbutton=new Object();
+var endlessButton;
 var nextLevel=0;
 var endlessMode;
 var groupCaptions;
@@ -25,7 +26,7 @@ var groupColors
 var groupCodes;
 
 //TODO DEBUG
-level=5;
+level=0;
 //setTimeout(function(e) { paused=false; },1)
 //TODO DEBUG
 
@@ -62,7 +63,7 @@ function setup()
         betbutton.opacity=1;
         betbutton.click=function(e) { startTimer(); this.clickable=false; this.opacity=0.2; };
         drawable.push(betbutton);   
-        nextLevel=rand(1,4);//TODO cambia qui se aggiungi livelli
+        nextLevel=rand(1,6);
         paused=false;    
         slowMoFactor=1;
 
@@ -129,6 +130,38 @@ function setup()
         zrscu.clickable=true;
         zrscu.click=function(e) { drawable.filter(el => el.type === "levelCard").forEach(el => { el.chosen=false; }); zrscu.chosen=true;  nextLevel=4;}
         drawable.push(zrscu);
+
+        var hvr=new Object();
+        hvr.type="levelCard";
+        hvr.x=canvasW/5*2-50;
+        hvr.y=canvasH/10*6;
+        hvr.width=100;
+        hvr.height=100;
+        hvr.color="#000";
+        hvr.fontSize=30;
+        hvr.caption="👨👩\n\n🐇"
+        hvr.nWon=localStorage.getItem("decidophobia.5.won");
+        if(!hvr.nWon)
+            hvr.nWon=0;
+        hvr.clickable=true;
+        hvr.click=function(e) { drawable.filter(el => el.type === "levelCard").forEach(el => { el.chosen=false; }); hvr.chosen=true;  nextLevel=5;}
+        drawable.push(hvr);
+
+        var sumN=new Object();
+        sumN.type="levelCard";
+        sumN.x=canvasW/5*3-50;
+        sumN.y=canvasH/10*6;
+        sumN.width=100;
+        sumN.height=100;
+        sumN.color="#000";
+        sumN.fontSize=30;
+        sumN.caption="01234\n+\n56789"
+        sumN.nWon=localStorage.getItem("decidophobia.5.won");
+        if(!sumN.nWon)
+            sumN.nWon=0;
+        sumN.clickable=true;
+        sumN.click=function(e) { drawable.filter(el => el.type === "levelCard").forEach(el => { el.chosen=false; }); sumN.chosen=true;  nextLevel=6;}
+        drawable.push(sumN);
     }
     //yin-yang
     else if(level==1)
@@ -219,7 +252,7 @@ function setup()
 
         tmp.click=function(e) { tmp.chosen=true; tmp2.chosen=false; betbutton.clickable=true; betbutton.opacity=1; };
         tmp2.click=function(e) { tmp2.chosen=true; tmp.chosen=false; betbutton.clickable=true; betbutton.opacity=1; };
-        betbutton.click=function(e) { paused=false; slowMoFactor=-0.3; this.clickable=false; this.opacity=0.2; tmp.clickable=false; tmp2.clickable=false; };
+        betbutton.click=function(e) { paused=false; slowMoFactor=-0.3; this.clickable=false; this.opacity=0.2; tmp.clickable=false; tmp2.clickable=false; drawable.includes(endlessButton) && drawable.splice(drawable.indexOf(endlessButton), 1); };
         betbutton.clickable=false; 
         betbutton.opacity=0.2;
         drawable.push(betbutton); 
@@ -237,22 +270,22 @@ function setup()
         //endless button
         if(localStorage.getItem("decidophobia."+level+".won")>2)
         {
-            var endless=new Object();
-            endless.type="rectangle";
-            endless.x=canvasW/10;
-            endless.y=canvasH/10*9+25;
-            endless.width=200;
-            endless.height=50;
-            endless.color="#00F";
-            endless.fontSize=40;
-            endless.caption="ENDLESS";
-            endless.clickable=true;
-            endless.click=function(e) { drawable.splice(drawable.indexOf(this),1); drawable.splice(drawable.indexOf(betbutton),1); drawable.splice(drawable.indexOf(timer),1); paused=false; slowMoFactor=1; endlessMode=true; }
-            drawable.push(endless);
+            endlessButton=new Object();
+            endlessButton.type="rectangle";
+            endlessButton.x=canvasW/10;
+            endlessButton.y=canvasH/10*9+25;
+            endlessButton.width=200;
+            endlessButton.height=50;
+            endlessButton.color="#00F";
+            endlessButton.fontSize=40;
+            endlessButton.caption="ENDLESS";
+            endlessButton.clickable=true;
+            endlessButton.click=function(e) { drawable.splice(drawable.indexOf(this),1); drawable.splice(drawable.indexOf(betbutton),1); drawable.splice(drawable.indexOf(timer),1); paused=false; slowMoFactor=1; endlessMode=true; }
+            drawable.push(endlessButton);
         }
     }
     //evolutive chain
-    else if(level==2 || level==3 || level==4 || level==5)
+    else if(level==2 || level==3 || level==4 || level==5 || level==6)
     {
         var radius=30;
         var nGroups=0;
@@ -295,13 +328,36 @@ function setup()
             groupCodes=["man","woman","rabbit","rabbit"];
             groupCaptions=["👨","👩","🐇","🐇"];
             groupColors=["#4281ED","#FF70FD","#BF6119","#BF6119"];
-            totalnumber=11;
+            totalnumber=15;
+        }
+        //numeri e somme!
+        else if(level==6)
+        {
+            nGroups=10;
+            radius=15;
+            ballFontSize=20;
+            groupCodes=["zero","one","two","three","four","five","six","seven","eight","nine"];
+            groupCaptions=["0","1","2","3","4","5","6","7","8","9"];
+            groupColors = ["#FFFFFF","#EDEDED","#DBDBDB","#C9C9C9","#B7B7B7","#A5A5A5","#939393","#818181","#8A8A8A","#888888"];
+            totalnumber=30;
         }
         for(i=0;i<totalnumber;i++)
         {
             var tmp=new Object();
             tmp.x=rand(canvasW/20+radius*1.1,canvasW/20*19-radius*1.1);
             tmp.y=rand(canvasH/20+radius*1.1,canvasH/20*16-radius*1.1);
+            //we avoid early overlapping
+            if(level==6)
+            {
+                var collide=true;
+                while(collide)
+                {
+                    tmp.x=rand(canvasW/20+radius*1.1,canvasW/20*19-radius*1.1);
+                    tmp.y=rand(canvasH/20+radius*1.1,canvasH/20*16-radius*1.1);
+                    collide=false;
+                    drawable.filter(el => el.type === "circle").forEach(ball => { if(distanceFrom(tmp.x,tmp.y,ball.x,ball.y)<radius*2) collide=true; });
+                }
+            }
             tmp.type="circle";
             tmp.color="#FFF";
             tmp.caption=groupCaptions[i%nGroups];
@@ -329,6 +385,9 @@ function setup()
         }
         for(i=0;i<nGroups;i++)
         {
+            //on level 6, you can't bet on on odd numbers
+            if(level==6 && i%2)
+                continue;
             var tmp=new Object();
             tmp.color=groupColors[i];
             tmp.caption=groupCodes[i].charAt(0).toUpperCase() + groupCodes[i].slice(1);
@@ -360,18 +419,18 @@ function setup()
         //endless button
         if(localStorage.getItem("decidophobia."+level+".won")>2)
         {
-            var endless=new Object();
-            endless.type="rectangle";
-            endless.x=canvasW/10;
-            endless.y=canvasH/10*9+25;
-            endless.width=200;
-            endless.height=50;
-            endless.color="#00F";
-            endless.fontSize=40;
-            endless.caption="ENDLESS";
-            endless.clickable=true;
-            endless.click=function(e) { drawable.splice(drawable.indexOf(this),1); drawable.splice(drawable.indexOf(betbutton),1); drawable.splice(drawable.indexOf(timer),1); paused=false; slowMoFactor=1; endlessMode=true; }
-            drawable.push(endless);            
+            var endlessButton=new Object();
+            endlessButton.type="rectangle";
+            endlessButton.x=canvasW/10;
+            endlessButton.y=canvasH/10*9+25;
+            endlessButton.width=200;
+            endlessButton.height=50;
+            endlessButton.color="#00F";
+            endlessButton.fontSize=40;
+            endlessButton.caption="ENDLESS";
+            endlessButton.clickable=true;
+            endlessButton.click=function(e) { drawable.splice(drawable.indexOf(this),1); drawable.splice(drawable.indexOf(betbutton),1); drawable.splice(drawable.indexOf(timer),1); paused=false; slowMoFactor=1; endlessMode=true; }
+            drawable.push(endlessButton);            
         }
     }
 
@@ -524,10 +583,14 @@ function draw(obj)
             ctx.textAlign="left";
             var nMembers=Reflect.ownKeys(obj.members).length-1;
             var memberCount=1;
+            if(nMembers>5)
+                ctx.font = fontSize/5+"px Georgia, serif";
+            else
+                ctx.font = fontSize/2+"px Georgia, serif";
+
             Reflect.ownKeys(obj.members).forEach(el => {
                 if(el=="length") return;
                 ctx.fillStyle=obj.members[el].color;
-                ctx.font = fontSize/2+"px Georgia, serif";
                 ctx.fillText(obj.members[el].caption+": "+obj.members[el].count,canvasW/2+150,canvasH/20*18 + (memberCount*100/nMembers)-50/nMembers );
                 if(obj.members[el].selected)
                     ctx.fillText("____",canvasW/2+150,canvasH/20*18 + (memberCount*100/nMembers)-50/nMembers );
@@ -566,7 +629,7 @@ function move(obj)
 {
     if(paused) return;
     if(obj.type=="timer")
-    {
+    {   
         //manage slowmotion
         if(level==1)
         {
@@ -592,15 +655,21 @@ function checkWinner()
 {
     var maxValue=-1;
     var winner=null;
+    var chosen=null;
     paused=true;
     Reflect.ownKeys(betbutton.members).forEach(el => {
         if(el=="length") return;
-        if(maxValue<betbutton.members[el].count)
+        if(maxValue<=betbutton.members[el].count)
         {
             maxValue=betbutton.members[el].count;
             winner=el;
         }
+        if(betbutton.members[el].chosen)
+            chosen=el;
     });
+    //handle ties
+    if(chosen!=null && betbutton.members[chosen].count==betbutton.members[winner].count)
+        winner=chosen;
     if(endlessMode)
     {
         var tmp=new Object();
@@ -682,7 +751,7 @@ function run()
         ctx.fillText("(don't worry, you have time to change your mind.)",canvasW/2,canvasH/10*8+100);
 
     }
-    else if(level==2 || level==3 || level==4 || level==5)
+    else if(level==2 || level==3 || level==4 || level==5 || level==6)
     {
         ctx.fillStyle=fg;
         ctx.fillRect(canvasW/20-5,canvasH/20-5,canvasW/20*18+10,canvasH/20*15+10);
@@ -707,6 +776,7 @@ function run()
     if(level==1)
     {
         //bounce
+        if(!paused)
         drawable.filter(el => el.type === "circle").forEach(el => {
             //borders
             if(distanceFrom(el.x,el.y,canvasW/2,canvasH/2)>Math.min(canvasH,canvasW)*0.4-el.radius)
@@ -742,9 +812,10 @@ function run()
         betbutton.members['black'].count=nBlack;
         betbutton.members['white'].count=nWhite;
     }
-    else if(level==2 || level==3 || level==4 || level==5)
+    else if(level==2 || level==3 || level==4 || level==5 || level==6)
     {
         //bounce logic
+        if(!paused)
         drawable.filter(el => el.type === "circle").forEach(el => {
             // Borders
             if (el.x - el.radius < canvasW / 20) {
@@ -858,6 +929,17 @@ function run()
                             el.cooldown=0.5;
                         }
                     }
+                    //we sum them
+                    else if(level==6)
+                    {
+                        var somma=""+Number(Number(ball.caption)+Number(el.caption))%10;
+                        ball.caption=somma;
+                        el.caption=somma;
+                        el.code=groupCodes[groupCaptions.indexOf(somma)];
+                        ball.code=groupCodes[groupCaptions.indexOf(somma)];
+                        el.color=groupColors[groupCaptions.indexOf(somma)];
+                        ball.color=groupColors[groupCaptions.indexOf(somma)];
+                    }
                     else
                     {
                         //se sono diversi, scegli il vincitore
@@ -886,12 +968,17 @@ function run()
             drawable.filter(el => el.type === "circle").forEach(ball => { groupCounts[groupCodes.indexOf((ball.code=="rabbit"?"rabbit":"human"))]++; });
         else
             drawable.filter(el => el.type === "circle").forEach(ball => { groupCounts[groupCodes.indexOf(ball.code)]++; });
-        if(!paused && Math.max(groupCounts)==groupCounts.reduce((a, b) => a + b, 0))
+        if(!paused && groupCounts.filter(n => n === 0).length >= Math.ceil(groupCounts.length / 2))
+            checkWinner();
+        else if(drawable.length>1999)//too much population
             checkWinner();
         else 
-            drawPieChart(ctx, canvasH/20*1.2, canvasW/20*17, canvasH/20*18, groupCounts, groupColors);
+            drawPieChart(ctx, canvasH/20*1.2, canvasW/30*26, canvasH/20*18, groupCounts, groupColors);
         for(i=0;i<nGroups;i++)
-            betbutton.members[groupCodes[i]].count=groupCounts[i];
+        {
+            if(betbutton.members[groupCodes[i]])
+                betbutton.members[groupCodes[i]].count=groupCounts[i];
+        }
     }
 
     //border
